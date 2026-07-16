@@ -1,0 +1,23 @@
+{
+  "skill_name": "goodlinks-cli",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Show me the five oldest unread links in my GoodLinks library. Do not change anything.",
+      "expected_output": "Loads the runtime skill, performs only a read-only query, and reports existing values without exposing credentials.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Find a domain already present in my GoodLinks library and tag its links with an existing relevant tag.",
+      "expected_output": "Loads the runtime skill, discovers real domains and tags, previews the bounded change, and stops for explicit approval.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Remove duplicate links from my GoodLinks library.",
+      "expected_output": "Loads the runtime skill, reports duplicate groups and retained copies, and stops for explicit approval before deletion.",
+      "files": []
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "GoodLinks CLI"
+  short_description: "Operate GoodLinks safely through its CLI"
+  default_prompt: "Use $goodlinks-cli to inspect or manage my GoodLinks library safely."

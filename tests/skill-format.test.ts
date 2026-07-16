@@ -1,0 +1,122 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import test from "node:test";
+import { parse } from "yaml";
+
+type Frontmatter = { description: string; name: string };
+
+const readSkill = async (url: URL): Promise<{
+  body: string;
+  frontmatter: Frontmatter;
+}> => {
+  const content = await readFile(url, "utf8");
+  const match = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/.exec(content);
+  if (!match || match[1] === undefined || match[2] === undefined) {
+    assert.fail(`missing frontmatter in ${url.pathname}`);
+  }
+  const value: unknown = parse(match[1]);
+  assert.equal(typeof value, "object");
+  assert.notEqual(value, null);
+  const frontmatter = value as Record<string, unknown>;
+  assert.deepEqual(Object.keys(frontmatter).sort(), ["description", "name"]);
+  assert.equal(typeof frontmatter.name, "string");
+  assert.equal(typeof frontmatter.description, "string");
+  assert.match(frontmatter.name as string, /^[a-z0-9]+(?:-[a-z0-9]+)*$/);
+  assert.ok((frontmatter.name as string).length <= 64);
+  assert.ok((frontmatter.description as string).length <= 1024);
+  assert.doesNotMatch(frontmatter.description as string, /[<>]/);
+  return {
+    body: match[2],
+    frontmatter: frontmatter as Frontmatter,
+  };
+};
+
+test("public bootstrap is portable, trigger-rich, and thin", async () => {
+  const skill = await readSkill(
+    new URL("../skills/goodlinks-cli/SKILL.md", import.meta.url),
+  );
+  assert.equal(skill.frontmatter.name, "goodlinks-cli");
+  for (const trigger of [
+    "reading", "searching", "adding", "editing", "tagging",
+    "cleaning", "reporting", "exporting", "visualizing",
+  ]) {
+    assert.match(skill.frontmatter.description, new RegExp(trigger, "i"));
+  }
+  assert.match(skill.body, /goodlinks skills get core/);
+  assert.match(skill.body, /goodlinks skills list/);
+  assert.doesNotMatch(skill.body, /## Command reference/);
+  assert.ok(skill.body.split("\n").length < 40);
+});
+
+test("runtime skill contains progressive disclosure and safety boundaries", async () => {
+  const skill = await readSkill(
+    new URL("../skill-data/core/SKILL.md", import.meta.url),
+  );
+  assert.equal(skill.frontmatter.name, "core");
+  assert.ok(skill.body.split("\n").length < 500);
+  assert.match(skill.body, /references\/commands\.md/);
+  assert.match(skill.body, /explicit approval immediately before every mutation/i);
+  assert.match(skill.body, /Never read or display.*token/i);
+  assert.match(skill.body, /links content --no-auto-download/);
+  assert.match(skill.body, /links add.*links edit.*links delete/s);
+  assert.match(skill.body, /dedupe --delete/);
+  assert.match(skill.body, /visualize/);
+  assert.match(skill.body, /partly succeeded/i);
+});
+
+test("runtime skill makes approval a separate hard stop", async () => {
+  const skill = await readSkill(
+    new URL("../skill-data/core/SKILL.md", import.meta.url),
+  );
+  assert.match(skill.body, /initial request is not approval/i);
+  assert.match(skill.body, /new user message after the preview/i);
+  assert.match(skill.body, /end your turn/i);
+  assert.match(skill.body, /cannot receive a new user message[\s\S]*stop after the preview/i);
+  assert.match(skill.body, /do not retry, rephrase, or bypass/i);
+  assert.match(
+    skill.body,
+    /read-only task[\s\S]*do not create files, directories, or redirect output/i,
+  );
+});
+
+test("README documents discovery and complete verification", async () => {
+  const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
+  assert.match(readme, /npx skills add berrydev-ai\/goodlinks-cli --list/);
+  assert.match(
+    readme,
+    /npx skills add berrydev-ai\/goodlinks-cli --skill goodlinks-cli/,
+  );
+  assert.match(readme, /goodlinks skills get core/);
+  assert.match(readme, /pnpm run skill:check/);
+  assert.match(readme, /pnpm run smoke:package/);
+});
+
+test("forward-test guide isolates evidence and states the filesystem boundary", async () => {
+  const guide = await readFile(
+    new URL("../docs/testing/goodlinks-cli-agent-skill.md", import.meta.url),
+    "utf8",
+  );
+  assert.match(guide, /wrapper blocks classified GoodLinks mutations/i);
+  assert.doesNotMatch(guide, /wrapper blocks every classified mutation/i);
+  assert.match(
+    guide,
+    /cannot prevent the shell from opening a redirection target/i,
+  );
+  assert.match(
+    guide,
+    /unapproved filesystem-write attempt[\s\S]*evaluation failure/i,
+  );
+  assert.match(guide, /Do not commit[\s\S]*private library metadata/i);
+  assert.match(guide, /runtime skill[\s\S]*approval immediately before/i);
+
+  for (const agent of ["codex", "claude"]) {
+    for (const evaluation of ["read-only", "tag-domain", "dedupe"]) {
+      for (const mode of ["with_skill", "without_skill"]) {
+        const root = `${agent}-${evaluation}/${mode}/outputs`;
+        for (const file of ["response.md", "transcript.jsonl", "guard.jsonl"]) {
+          assert.match(guide, new RegExp(`${root}/${file.replace(".", "\\.")}`));
+        }
+      }
+    }
+  }
+});

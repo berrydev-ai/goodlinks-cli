@@ -31,6 +31,31 @@ pnpm dlx @berrydev-ai/goodlinks-cli --help
 
 The installed binary is `goodlinks`.
 
+## Agent skill
+
+Install the portable bootstrap into a supported agent:
+
+```bash
+npx skills add berrydev-ai/goodlinks-cli --list
+npx skills add berrydev-ai/goodlinks-cli --skill goodlinks-cli
+```
+
+Load the detailed guide from the same npm version as the CLI:
+
+```bash
+goodlinks skills get core
+```
+
+Inspect bundled content directly:
+
+```bash
+goodlinks skills list
+goodlinks skills get core --full
+goodlinks skills path core
+```
+
+The guide inspects first and requires explicit approval immediately before every GoodLinks or filesystem mutation.
+
 ## Authentication
 
 The CLI resolves a bearer token in ascending priority:
@@ -293,26 +318,27 @@ under `layouts/shortcodes/`.
 
 ## AI-session use
 
-Prefer JSON modes when an agent will parse output:
+Install or load the bundled skill before asking an agent to operate GoodLinks. It prefers JSON for inspection, uses dry-run/report modes before writes, protects credentials, and requires explicit approval immediately before each mutation.
+
+Regenerate and check exact command metadata after changing the Commander tree:
 
 ```bash
-goodlinks links search --search "local API" --limit 20
-goodlinks tags --json
-goodlinks stale --days 90 --json
-goodlinks dead-links --tag development --dry-run --json
+pnpm run skill:generate
+pnpm run skill:check
 ```
-
-Mutation commands provide `--dry-run` where bulk changes are possible.
 
 ## Development
 
 ```bash
-pnpm install
-pnpm test
 pnpm run typecheck
+pnpm test
 pnpm run build
-pnpm pack
+pnpm run skill:check
+pnpm run smoke:package
+git diff --check
 ```
+
+[Run the isolated agent skill forward tests](docs/testing/goodlinks-cli-agent-skill.md).
 
 Tests run real CLI processes against controlled local HTTP servers. No private
 implementation functions form part of the public package contract.
