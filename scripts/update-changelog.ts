@@ -174,7 +174,7 @@ export const updateChangelog = (
     : changelog.length;
   const prefix = changelog.slice(0, unreleasedStart);
   const released = changelog.slice(releasedStart);
-  const lines = changelog.slice(unreleasedStart, releasedStart).trimEnd().split("\n");
+  const lines = changelog.slice(unreleasedStart, releasedStart).split("\n");
   const unreleasedIndex = 0;
   const unreleasedEnd = lines.length;
   const category = categorizePullRequest(pullRequest);
@@ -182,16 +182,26 @@ export const updateChangelog = (
   const entry = `- ${entryTitle(pullRequest.title)} (${pullRequestLink})`;
 
   if (target.newHeading) {
+    let boundaryStart = target.index;
+    while (boundaryStart > unreleasedIndex + 1 && lines[boundaryStart - 1] === "") {
+      boundaryStart -= 1;
+    }
+    let boundaryEnd = target.index;
+    while (boundaryEnd < unreleasedEnd && lines[boundaryEnd] === "") {
+      boundaryEnd += 1;
+    }
     const block = ["", `### ${category}`, "", entry, ""];
-    lines.splice(target.index, 0, ...block);
+    lines.splice(boundaryStart, boundaryEnd - boundaryStart, ...block);
   } else {
-    lines.splice(target.index, 0, entry);
+    let boundaryStart = target.index;
+    while (boundaryStart > unreleasedIndex + 1 && lines[boundaryStart - 1] === "") {
+      boundaryStart -= 1;
+    }
+    const trailingBoundary = lines[target.index]?.startsWith("### ") ? [""] : [];
+    lines.splice(boundaryStart, target.index - boundaryStart, "", entry, ...trailingBoundary);
   }
 
-  const updatedUnreleased = lines.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd();
-  const content = released
-    ? `${prefix}${updatedUnreleased}\n\n${released}`
-    : `${prefix}${updatedUnreleased}\n`;
+  const content = `${prefix}${lines.join("\n")}${released}`;
 
   return {
     category,

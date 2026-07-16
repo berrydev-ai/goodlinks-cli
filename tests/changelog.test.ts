@@ -144,6 +144,36 @@ test("released content keeps intentional blank lines byte-for-byte", async () =>
   assert.equal(result.changelog.slice(releasedIndex), releasedContent);
 });
 
+test("existing Unreleased content keeps intentional blank lines byte-for-byte", async () => {
+  const existingContent = `### Changed
+
+- Documented behavior:
+
+  First paragraph.
+
+
+  Second paragraph.
+
+
+`;
+  const releasedContent = `## [0.1.0] - 2026-07-16
+
+- Existing release.
+`;
+  const result = await runGenerator(
+    mergedPullRequest,
+    `${initialChangelog}\n${existingContent}${releasedContent}`,
+  );
+
+  const existingIndex = result.changelog.indexOf("### Changed");
+  const releasedIndex = result.changelog.indexOf("## [0.1.0]");
+  assert.notEqual(existingIndex, -1);
+  assert.notEqual(releasedIndex, -1);
+  assert.equal(result.changelog.slice(existingIndex, releasedIndex), existingContent);
+  assert.equal(result.changelog.slice(releasedIndex), releasedContent);
+  assert.match(result.changelog, /goodlinks-cli\/pull\/2\)\)\n\n### Changed/);
+});
+
 test("repeated event does not duplicate its entry", async () => {
   const first = await runGenerator(mergedPullRequest);
   const second = await runGenerator(mergedPullRequest, first.changelog);
