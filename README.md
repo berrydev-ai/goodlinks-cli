@@ -317,6 +317,31 @@ pnpm pack
 Tests run real CLI processes against controlled local HTTP servers. No private
 implementation functions form part of the public package contract.
 
+## Maintainer release
+
+The npm package is public and published from the `main` branch. Keep npm
+credentials and one-time passwords out of the repository.
+
+Before each release:
+
+```bash
+pnpm install
+pnpm run check
+pnpm version patch       # or: minor / major
+git push --follow-tags origin main
+pnpm publish --access public --otp=<current-code>
+```
+
+Verify the published version:
+
+```bash
+npm view @berrydev-ai/goodlinks-cli version
+```
+
+Published npm versions are immutable. If `pnpm publish` reports `E403` because
+the version was previously published, bump the version and publish again; do
+not retry the same version.
+
 ## License
 
 MIT
