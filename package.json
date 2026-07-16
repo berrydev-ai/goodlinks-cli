@@ -9,15 +9,18 @@
   "files": [
     "dist",
     "templates",
+    "skills",
+    "skill-data",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
     "build": "tsup src/cli.ts --format esm --clean",
-    "check": "pnpm run typecheck && pnpm test && pnpm run build",
-    "prepack": "pnpm run build",
+    "check": "pnpm run typecheck && pnpm test && pnpm run build && pnpm run skill:check",
+    "prepack": "pnpm run build && pnpm run skill:check",
     "skill:check": "node --import tsx scripts/generate-skill-reference.ts --check",
     "skill:generate": "node --import tsx scripts/generate-skill-reference.ts",
+    "smoke:package": "node --import tsx scripts/smoke-packed-skills.ts",
     "smoke:live": "pnpm run build && node --import tsx scripts/live-smoke.ts",
     "test": "node --import tsx --test tests/*.test.ts",
     "test:watch": "node --import tsx --test --watch tests/*.test.ts",

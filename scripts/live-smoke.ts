@@ -34,24 +34,25 @@ try {
     "GoodLinks CLI smoke test",
   ])) as { id?: string; url?: string };
   assert.equal(added.url, smokeUrl);
-  assert.equal(typeof added.id, "string");
-  linkId = added.id;
+  const addedId = added.id;
+  assert.ok(typeof addedId === "string");
+  linkId = addedId;
 
   const edited = (await runCli([
     "links",
     "edit",
-    linkId,
+    addedId,
     "--title",
     "GoodLinks CLI smoke test edited",
   ])) as { id?: string; title?: string };
-  assert.equal(edited.id, linkId);
+  assert.equal(edited.id, addedId);
   assert.equal(edited.title, "GoodLinks CLI smoke test edited");
 
-  const fetched = (await runCli(["links", "get", linkId])) as {
+  const fetched = (await runCli(["links", "get", addedId])) as {
     id?: string;
     title?: string;
   };
-  assert.equal(fetched.id, linkId);
+  assert.equal(fetched.id, addedId);
   assert.equal(fetched.title, "GoodLinks CLI smoke test edited");
 } finally {
   if (linkId) {
