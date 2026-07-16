@@ -3,6 +3,7 @@ import { Command } from "commander";
 import { registerApiCommands } from "./commands/api.js";
 import { registerBacklogCommands } from "./commands/backlog.js";
 import { registerGardeningCommands } from "./commands/gardening.js";
+import { registerSkillsCommands } from "./commands/skills.js";
 import { registerVisualizeCommand } from "./commands/visualize.js";
 
 /** Keeps command discovery reusable without parsing arguments or performing I/O. */
@@ -22,5 +23,6 @@ export const createProgram = (version: string): Command => {
   registerGardeningCommands(program, apiGroups);
   registerBacklogCommands(program);
   registerVisualizeCommand(program);
+  registerSkillsCommands(program);
   return program;
 };

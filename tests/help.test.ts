@@ -18,7 +18,7 @@ test("program factory exposes the command tree without parsing", () => {
     [
       "links", "lists", "tags", "highlights", "urls", "tag-domain",
       "dedupe", "dead-links", "auto-tag", "untag", "retag", "bulk-tag",
-      "report", "stale", "export", "visualize",
+      "report", "stale", "export", "visualize", "skills",
     ],
   );
 });
@@ -29,6 +29,7 @@ test("user can discover API and collection commands", async () => {
   for (const name of ["links", "highlights", "tag-domain", "visualize"]) {
     assert.match(result.stdout, new RegExp(name));
   }
+  assert.match(result.stdout, /skills/);
 });
 
 test("CLI version matches package.json", async () => {

@@ -38,6 +38,7 @@ Manage a local GoodLinks library from the command line
 | `goodlinks stale` | List unread links saved more than a given number of days ago |
 | `goodlinks export` | Export the complete collection |
 | `goodlinks visualize` | Generate visualization data and HTML |
+| `goodlinks skills` | Inspect bundled agent skills |
 
 ## `goodlinks links`
 
@@ -702,6 +703,88 @@ Generate visualization data and HTML
 | `--hugo-dir <path>` | Hugo project root |  |  |
 | `--page-bundle <path>` | Hugo page bundle path |  |  |
 | `--template-dir <path>` | Directory containing index and shortcode templates |  |  |
+
+### Inherited global options
+
+| Option | Description | Default | Choices |
+| --- | --- | --- | --- |
+| `-V, --version` | output the version number |  |  |
+| `--base-url <url>` | GoodLinks API base URL | `"http://localhost:9428/api/v1"` |  |
+| `--token <token>` | GoodLinks API bearer token |  |  |
+
+## `goodlinks skills`
+
+Inspect bundled agent skills
+
+**Usage:** `goodlinks skills [options] [command]`
+
+### Inherited global options
+
+| Option | Description | Default | Choices |
+| --- | --- | --- | --- |
+| `-V, --version` | output the version number |  |  |
+| `--base-url <url>` | GoodLinks API base URL | `"http://localhost:9428/api/v1"` |  |
+| `--token <token>` | GoodLinks API bearer token |  |  |
+
+### Subcommands
+
+| Command | Description |
+| --- | --- |
+| `goodlinks skills list` | List bundled agent skills |
+| `goodlinks skills get` | Print one bundled agent skill |
+| `goodlinks skills path` | Print the bundled skill-data path |
+
+## `goodlinks skills list`
+
+List bundled agent skills
+
+**Usage:** `goodlinks skills list [options]`
+
+### Inherited global options
+
+| Option | Description | Default | Choices |
+| --- | --- | --- | --- |
+| `-V, --version` | output the version number |  |  |
+| `--base-url <url>` | GoodLinks API base URL | `"http://localhost:9428/api/v1"` |  |
+| `--token <token>` | GoodLinks API bearer token |  |  |
+
+## `goodlinks skills get`
+
+Print one bundled agent skill
+
+**Usage:** `goodlinks skills get [options] <name>`
+
+### Arguments
+
+| Argument | Description | Required | Variadic | Default | Choices |
+| --- | --- | --- | --- | --- | --- |
+| `<name>` |  | yes | no |  |  |
+
+### Options
+
+| Option | Description | Default | Choices |
+| --- | --- | --- | --- |
+| `--full` | Append bundled Markdown references |  |  |
+
+### Inherited global options
+
+| Option | Description | Default | Choices |
+| --- | --- | --- | --- |
+| `-V, --version` | output the version number |  |  |
+| `--base-url <url>` | GoodLinks API base URL | `"http://localhost:9428/api/v1"` |  |
+| `--token <token>` | GoodLinks API bearer token |  |  |
+
+## `goodlinks skills path`
+
+Print the bundled skill-data path
+
+**Usage:** `goodlinks skills path [options] [name]`
+
+### Arguments
+
+| Argument | Description | Required | Variadic | Default | Choices |
+| --- | --- | --- | --- | --- | --- |
+| `[name]` |  | no | no |  |  |
 
 ### Inherited global options
 
