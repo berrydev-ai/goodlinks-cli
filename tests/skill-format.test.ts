@@ -63,3 +63,15 @@ test("runtime skill contains progressive disclosure and safety boundaries", asyn
   assert.match(skill.body, /visualize/);
   assert.match(skill.body, /partly succeeded/i);
 });
+
+test("README documents discovery and complete verification", async () => {
+  const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
+  assert.match(readme, /npx skills add berrydev-ai\/goodlinks-cli --list/);
+  assert.match(
+    readme,
+    /npx skills add berrydev-ai\/goodlinks-cli --skill goodlinks-cli/,
+  );
+  assert.match(readme, /goodlinks skills get core/);
+  assert.match(readme, /pnpm run skill:check/);
+  assert.match(readme, /pnpm run smoke:package/);
+});
