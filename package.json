@@ -16,6 +16,8 @@
     "build": "tsup src/cli.ts --format esm --clean",
     "check": "pnpm run typecheck && pnpm test && pnpm run build",
     "prepack": "pnpm run build",
+    "skill:check": "node --import tsx scripts/generate-skill-reference.ts --check",
+    "skill:generate": "node --import tsx scripts/generate-skill-reference.ts",
     "smoke:live": "pnpm run build && node --import tsx scripts/live-smoke.ts",
     "test": "node --import tsx --test tests/*.test.ts",
     "test:watch": "node --import tsx --test --watch tests/*.test.ts",
