@@ -105,12 +105,132 @@ test("evaluation guard redacts tokens in blocked logs", async (t) => {
   assert.match(blocked, /\[redacted\]/);
 });
 
+test("evaluation guard follows Commander parsing and rejects ambiguous separators", async (t) => {
+  const { env, log } = await createGuardFixture(t);
+
+  for (const args of [
+    ["retag", "--from", "discovered", "--to", "replacement", "--json"],
+    ["auto-tag", "--json"],
+    [
+      "untag",
+      "--tag",
+      "discovered",
+      "--domain",
+      "discovered.invalid",
+      "--json",
+    ],
+    ["bulk-tag", "--file", "discovered.yaml", "--json"],
+    ["dedupe", "--delete", "--json"],
+    [
+      "--base-url",
+      "http://localhost:9428/api/v1",
+      "links",
+      "search",
+      "--limit",
+      "5",
+    ],
+    ["links", "--token=delegated-secret", "search", "--limit", "5"],
+  ]) {
+    await runGuard(args, env);
+  }
+
+  for (const args of [
+    ["retag", "--from", "discovered", "--to", "--json"],
+    ["--", "links", "add", "https://blocked.invalid"],
+    ["links", "--", "add", "https://blocked.invalid"],
+    [
+      "--base-url=http://localhost:9428/api/v1",
+      "links",
+      "add",
+      "https://blocked.invalid",
+    ],
+    [
+      "links",
+      "--token",
+      "blocked-secret",
+      "add",
+      "https://blocked.invalid",
+    ],
+  ]) {
+    await assert.rejects(
+      runGuard(args, env),
+      (error: unknown) =>
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        error.code === 77,
+    );
+  }
+
+  assert.equal((await readFile(log, "utf8")).trim().split("\n").length, 5);
+});
+
 test("evaluation guard requires the real CLI for reads", async () => {
   const { GOODLINKS_REAL_CLI: _, ...env } = process.env;
 
   await assert.rejects(
     runGuard(["links", "search", "--limit", "5"], env),
     /GOODLINKS_REAL_CLI is required for agent skill evaluation/,
+  );
+});
+
+test("evaluation guard keeps spawn failures credential-safe", async (t) => {
+  const { directory, env } = await createGuardFixture(t);
+  const missingCli = join(directory, "private-missing-cli");
+  const spawnEnv = { ...env, GOODLINKS_REAL_CLI: missingCli };
+
+  for (const args of [
+    ["links", "--token", "split-spawn-secret", "search", "--limit", "5"],
+    ["links", "--token=joined-spawn-secret", "search", "--limit", "5"],
+  ]) {
+    await assert.rejects(runGuard(args, spawnEnv), (error: unknown) => {
+      assert.equal(typeof error, "object");
+      assert.notEqual(error, null);
+      const failure = error as { code?: unknown; stderr?: unknown };
+      assert.equal(failure.code, 1);
+      assert.equal(
+        failure.stderr,
+        "Unable to start GoodLinks CLI for agent skill evaluation.\n",
+      );
+      assert.doesNotMatch(
+        String(failure.stderr),
+        /private-missing-cli|spawnargs|split-spawn-secret|joined-spawn-secret/,
+      );
+      return true;
+    });
+  }
+});
+
+test("evaluation guard blocks mutations when its log cannot be written", async (t) => {
+  const { directory, env } = await createGuardFixture(t);
+  const blockedEnv = { ...env, GOODLINKS_EVAL_LOG: directory };
+
+  await assert.rejects(
+    runGuard(
+      [
+        "links",
+        "--token=blocked-log-secret",
+        "add",
+        "https://blocked.invalid/private-marker",
+      ],
+      blockedEnv,
+    ),
+    (error: unknown) => {
+      assert.equal(typeof error, "object");
+      assert.notEqual(error, null);
+      const failure = error as { code?: unknown; stderr?: unknown };
+      assert.equal(failure.code, 77);
+      assert.equal(
+        failure.stderr,
+        "Unable to record blocked GoodLinks mutation attempt.\n" +
+          "Blocked GoodLinks mutation during agent skill evaluation.\n",
+      );
+      assert.doesNotMatch(
+        String(failure.stderr),
+        /blocked-log-secret|blocked\.invalid|private-marker|goodlinks-eval-guard-/,
+      );
+      return true;
+    },
   );
 });
 

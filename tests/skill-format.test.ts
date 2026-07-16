@@ -75,3 +75,33 @@ test("README documents discovery and complete verification", async () => {
   assert.match(readme, /pnpm run skill:check/);
   assert.match(readme, /pnpm run smoke:package/);
 });
+
+test("forward-test guide isolates evidence and states the filesystem boundary", async () => {
+  const guide = await readFile(
+    new URL("../docs/testing/goodlinks-cli-agent-skill.md", import.meta.url),
+    "utf8",
+  );
+  assert.match(guide, /wrapper blocks classified GoodLinks mutations/i);
+  assert.doesNotMatch(guide, /wrapper blocks every classified mutation/i);
+  assert.match(
+    guide,
+    /cannot prevent the shell from opening a redirection target/i,
+  );
+  assert.match(
+    guide,
+    /unapproved filesystem-write attempt[\s\S]*evaluation failure/i,
+  );
+  assert.match(guide, /Do not commit[\s\S]*private library metadata/i);
+  assert.match(guide, /runtime skill[\s\S]*approval immediately before/i);
+
+  for (const agent of ["codex", "claude"]) {
+    for (const evaluation of ["read-only", "tag-domain", "dedupe"]) {
+      for (const mode of ["with_skill", "without_skill"]) {
+        const root = `${agent}-${evaluation}/${mode}/outputs`;
+        for (const file of ["response.md", "transcript.jsonl", "guard.jsonl"]) {
+          assert.match(guide, new RegExp(`${root}/${file.replace(".", "\\.")}`));
+        }
+      }
+    }
+  }
+});
