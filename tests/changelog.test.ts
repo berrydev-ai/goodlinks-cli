@@ -271,3 +271,29 @@ test("non-boolean merged field fails with a useful message", async () => {
   assert.match(result.stderr, /pull_request\.merged must be a boolean/);
   assert.equal(result.changelog, initialChangelog);
 });
+
+test("workflow runs the changelog command only after merges to main", async () => {
+  const packageJson = JSON.parse(
+    await readFile(resolve(root, "package.json"), "utf8"),
+  ) as { scripts: Record<string, string> };
+  const workflow = await readFile(
+    resolve(root, ".github/workflows/main-changelog.yml"),
+    "utf8",
+  );
+
+  assert.equal(
+    packageJson.scripts["changelog:update"],
+    "node --import tsx scripts/update-changelog.ts",
+  );
+  assert.match(workflow, /pull_request:\n\s+types: \[closed\]/);
+  assert.match(
+    workflow,
+    /github\.event\.pull_request\.merged == true && github\.event\.pull_request\.base\.ref == 'main'/,
+  );
+  assert.match(workflow, /contents: write/);
+  assert.match(workflow, /run: pnpm run changelog:update/);
+  assert.match(workflow, /if: steps\.changelog\.outputs\.changed == 'true'/);
+  assert.match(workflow, /git pull --rebase origin main/);
+  assert.match(workflow, /git push origin HEAD:main/);
+  assert.doesNotMatch(workflow, /git push origin .*tag/);
+});
