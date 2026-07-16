@@ -45,6 +45,16 @@ If the reference and installed help disagree, follow installed help and report t
 
 Approval applies to one write or one clearly bounded batch. Do not reuse it for a later write.
 
+### Approval hard stop
+
+- The user's initial request is not approval to mutate, even when it asks to tag, edit, delete, clean up, or create files.
+- Approval must arrive in a new user message after the preview and scope summary.
+- After asking for approval, end your turn. Do not run the mutation in the same turn.
+- If the session cannot receive a new user message, stop after the preview and report that the write was not run.
+- If a guard or permission check blocks a command, do not retry, rephrase, or bypass it. Report the blocked attempt and stop.
+- For a read-only task, do not create files, directories, or redirect output. Keep parsing in memory or use stdout-only pipes.
+- Do not change read state, metadata, tags, highlights, or cached content during a read-only task.
+
 ## Command safety
 
 ### Read-only
@@ -93,15 +103,15 @@ goodlinks highlights search --link-id <link-id>
 1. Read `urls --json` and `tags --json`.
 2. Use a domain and tag selected by the user or already present.
 3. Run `goodlinks tag-domain --domain <domain> --tag <tag> --dry-run`.
-4. Summarize the count and ask for approval.
-5. After approval, remove `--dry-run` and execute.
+4. Summarize the count, ask for approval, and end your turn.
+5. Only after approval arrives in a new user message, remove `--dry-run` and execute.
 6. Verify with `links search --tag <tag>`.
 
 ### Review duplicates
 
 1. Run `goodlinks dedupe --json`.
 2. Show the groups and oldest copies that would remain.
-3. Ask for approval before `goodlinks dedupe --delete`.
+3. Ask for approval before `goodlinks dedupe --delete`, then end your turn.
 4. Re-run `goodlinks dedupe --json` after deletion.
 
 ### Review dead links or bulk tags

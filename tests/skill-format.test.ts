@@ -64,6 +64,21 @@ test("runtime skill contains progressive disclosure and safety boundaries", asyn
   assert.match(skill.body, /partly succeeded/i);
 });
 
+test("runtime skill makes approval a separate hard stop", async () => {
+  const skill = await readSkill(
+    new URL("../skill-data/core/SKILL.md", import.meta.url),
+  );
+  assert.match(skill.body, /initial request is not approval/i);
+  assert.match(skill.body, /new user message after the preview/i);
+  assert.match(skill.body, /end your turn/i);
+  assert.match(skill.body, /cannot receive a new user message[\s\S]*stop after the preview/i);
+  assert.match(skill.body, /do not retry, rephrase, or bypass/i);
+  assert.match(
+    skill.body,
+    /read-only task[\s\S]*do not create files, directories, or redirect output/i,
+  );
+});
+
 test("README documents discovery and complete verification", async () => {
   const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
   assert.match(readme, /npx skills add berrydev-ai\/goodlinks-cli --list/);
