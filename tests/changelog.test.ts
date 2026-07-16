@@ -144,6 +144,44 @@ test("released content keeps intentional blank lines byte-for-byte", async () =>
   assert.equal(result.changelog.slice(releasedIndex), releasedContent);
 });
 
+test("new final Unreleased category keeps a blank line before the release", async () => {
+  const releasedContent = `## [0.1.0] - 2026-07-16
+
+- Existing release.
+`;
+  const result = await runGenerator(
+    mergedPullRequest,
+    `${initialChangelog}\n${releasedContent}`,
+  );
+
+  const releasedIndex = result.changelog.indexOf("## [0.1.0]");
+  assert.notEqual(releasedIndex, -1);
+  assert.match(
+    result.changelog,
+    /- Bundle a version-matched agent skill \(\[#2\]\(https:\/\/github\.com\/berrydev-ai\/goodlinks-cli\/pull\/2\)\)\n\n## \[0\.1\.0\]/,
+  );
+  assert.equal(result.changelog.slice(releasedIndex), releasedContent);
+});
+
+test("empty final Unreleased category keeps a blank line before the release", async () => {
+  const releasedContent = `## [0.1.0] - 2026-07-16
+
+- Existing release.
+`;
+  const result = await runGenerator(
+    mergedPullRequest,
+    `${initialChangelog}\n### Added\n\n${releasedContent}`,
+  );
+
+  const releasedIndex = result.changelog.indexOf("## [0.1.0]");
+  assert.notEqual(releasedIndex, -1);
+  assert.match(
+    result.changelog,
+    /### Added\n\n- Bundle a version-matched agent skill \(\[#2\]\(https:\/\/github\.com\/berrydev-ai\/goodlinks-cli\/pull\/2\)\)\n\n## \[0\.1\.0\]/,
+  );
+  assert.equal(result.changelog.slice(releasedIndex), releasedContent);
+});
+
 test("existing Unreleased content keeps intentional blank lines byte-for-byte", async () => {
   const existingContent = `### Changed
 

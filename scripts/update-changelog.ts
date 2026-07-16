@@ -190,14 +190,17 @@ export const updateChangelog = (
     while (boundaryEnd < unreleasedEnd && lines[boundaryEnd] === "") {
       boundaryEnd += 1;
     }
-    const block = ["", `### ${category}`, "", entry, ""];
+    const releaseBoundary = target.index === unreleasedEnd && released ? [""] : [];
+    const block = ["", `### ${category}`, "", entry, "", ...releaseBoundary];
     lines.splice(boundaryStart, boundaryEnd - boundaryStart, ...block);
   } else {
     let boundaryStart = target.index;
     while (boundaryStart > unreleasedIndex + 1 && lines[boundaryStart - 1] === "") {
       boundaryStart -= 1;
     }
-    const trailingBoundary = lines[target.index]?.startsWith("### ") ? [""] : [];
+    const trailingBoundary = target.index === unreleasedEnd && released
+      ? ["", ""]
+      : lines[target.index]?.startsWith("### ") ? [""] : [];
     lines.splice(boundaryStart, target.index - boundaryStart, "", entry, ...trailingBoundary);
   }
 
