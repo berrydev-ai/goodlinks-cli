@@ -45,6 +45,13 @@ const requiredString = (value: unknown, label: string): string => {
   return value;
 };
 
+const requiredBoolean = (value: unknown, label: string): boolean => {
+  if (typeof value !== "boolean") {
+    throw new Error(`${label} must be a boolean`);
+  }
+  return value;
+};
+
 const requiredInteger = (value: unknown, label: string): number => {
   if (typeof value !== "number" || !Number.isInteger(value)) {
     throw new Error(`${label} must be an integer`);
@@ -70,7 +77,7 @@ export const parsePullRequestEvent = (value: unknown): PullRequestMetadata => {
         `pull_request.labels[${index}].name`,
       ),
     ),
-    merged: pullRequest.merged === true,
+    merged: requiredBoolean(pullRequest.merged, "pull_request.merged"),
     number: requiredInteger(pullRequest.number, "pull_request.number"),
     title: requiredString(pullRequest.title, "pull_request.title"),
     url: requiredString(pullRequest.html_url, "pull_request.html_url"),
@@ -157,15 +164,19 @@ export const updateChangelog = (
     return unchanged(`pull request #${pullRequest.number} is already recorded`);
   }
 
-  const lines = changelog.trimEnd().split("\n");
-  const unreleasedIndex = lines.indexOf("## [Unreleased]");
-  if (unreleasedIndex < 0) throw new Error("CHANGELOG.md must contain ## [Unreleased]");
-  const nextVersionOffset = lines
-    .slice(unreleasedIndex + 1)
-    .findIndex((line) => line.startsWith("## "));
-  const unreleasedEnd = nextVersionOffset < 0
-    ? lines.length
-    : unreleasedIndex + 1 + nextVersionOffset;
+  const unreleasedHeading = "## [Unreleased]";
+  const unreleasedStart = changelog.indexOf(unreleasedHeading);
+  if (unreleasedStart < 0) throw new Error("CHANGELOG.md must contain ## [Unreleased]");
+  const afterUnreleasedHeading = unreleasedStart + unreleasedHeading.length;
+  const nextVersionMatch = /\n## /.exec(changelog.slice(afterUnreleasedHeading));
+  const releasedStart = nextVersionMatch
+    ? afterUnreleasedHeading + nextVersionMatch.index + 1
+    : changelog.length;
+  const prefix = changelog.slice(0, unreleasedStart);
+  const released = changelog.slice(releasedStart);
+  const lines = changelog.slice(unreleasedStart, releasedStart).trimEnd().split("\n");
+  const unreleasedIndex = 0;
+  const unreleasedEnd = lines.length;
   const category = categorizePullRequest(pullRequest);
   const target = insertionIndex(lines, unreleasedIndex, unreleasedEnd, category);
   const entry = `- ${entryTitle(pullRequest.title)} (${pullRequestLink})`;
@@ -177,10 +188,15 @@ export const updateChangelog = (
     lines.splice(target.index, 0, entry);
   }
 
+  const updatedUnreleased = lines.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd();
+  const content = released
+    ? `${prefix}${updatedUnreleased}\n\n${released}`
+    : `${prefix}${updatedUnreleased}\n`;
+
   return {
     category,
     changed: true,
-    content: `${lines.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd()}\n`,
+    content,
     reason: `added pull request #${pullRequest.number} under ${category}`,
   };
 };

@@ -122,6 +122,28 @@ test("missing headings are created in standard order", async () => {
   assert.ok(result.changelog.indexOf("### Added") < result.changelog.indexOf("### Fixed"));
 });
 
+test("released content keeps intentional blank lines byte-for-byte", async () => {
+  const releasedContent = `## [0.1.0] - 2026-07-16
+
+### Added
+
+- Documented behavior:
+
+  First paragraph.
+
+
+  Second paragraph.
+`;
+  const result = await runGenerator(
+    mergedPullRequest,
+    `${initialChangelog}\n${releasedContent}`,
+  );
+
+  const releasedIndex = result.changelog.indexOf("## [0.1.0]");
+  assert.notEqual(releasedIndex, -1);
+  assert.equal(result.changelog.slice(releasedIndex), releasedContent);
+});
+
 test("repeated event does not duplicate its entry", async () => {
   const first = await runGenerator(mergedPullRequest);
   const second = await runGenerator(mergedPullRequest, first.changelog);
@@ -157,5 +179,27 @@ test("malformed pull request event fails with a useful message", async () => {
 
   assert.notEqual(result.exitCode, 0);
   assert.match(result.stderr, /pull_request\.title must be a non-empty string/);
+  assert.equal(result.changelog, initialChangelog);
+});
+
+test("missing merged field fails with a useful message", async () => {
+  const result = await runGenerator({
+    ...mergedPullRequest,
+    pull_request: { ...mergedPullRequest.pull_request, merged: undefined },
+  });
+
+  assert.notEqual(result.exitCode, 0);
+  assert.match(result.stderr, /pull_request\.merged must be a boolean/);
+  assert.equal(result.changelog, initialChangelog);
+});
+
+test("non-boolean merged field fails with a useful message", async () => {
+  const result = await runGenerator({
+    ...mergedPullRequest,
+    pull_request: { ...mergedPullRequest.pull_request, merged: "true" },
+  });
+
+  assert.notEqual(result.exitCode, 0);
+  assert.match(result.stderr, /pull_request\.merged must be a boolean/);
   assert.equal(result.changelog, initialChangelog);
 });
