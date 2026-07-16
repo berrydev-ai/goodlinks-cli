@@ -1,0 +1,21 @@
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+{{ $data := .Page.Resources.GetMatch "goodlinks-data.json" }}
+<div id="goodlinks-sunburst-{{ .Ordinal }}"></div>
+<script>
+fetch("{{ $data.RelPermalink }}").then(response => response.json()).then(data => {
+  const labels = ["GoodLinks"], parents = [""], ids = ["root"], values = [0], domainTags = {};
+  data.articles.forEach(link => {
+    const domain = new URL(link.url).hostname.toLowerCase().replace(/^www\./, "");
+    const tags = link.tags && link.tags.length ? link.tags : ["(untagged)"];
+    domainTags[domain] = domainTags[domain] || {};
+    tags.forEach(tag => { domainTags[domain][tag] = (domainTags[domain][tag] || 0) + 1; });
+  });
+  Object.entries(domainTags).forEach(([domain, tags]) => {
+    const domainId = "domain:" + domain;
+    const domainValue = Object.values(tags).reduce((total, count) => total + count, 0);
+    labels.push(domain); parents.push("GoodLinks"); ids.push(domainId); values.push(domainValue); values[0] += domainValue;
+    Object.entries(tags).forEach(([tag, count]) => { labels.push(tag); parents.push(domain); ids.push(domainId + ":" + tag); values.push(count); });
+  });
+  Plotly.newPlot("goodlinks-sunburst-{{ .Ordinal }}", [{labels,parents,ids,values,type:"sunburst",branchvalues:"total"}], {margin:{t:10}});
+});
+</script>

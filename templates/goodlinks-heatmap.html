@@ -1,0 +1,8 @@
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+{{ $data := .Page.Resources.GetMatch "goodlinks-data.json" }}
+<div id="goodlinks-heatmap-{{ .Ordinal }}"></div>
+<script>
+fetch("{{ $data.RelPermalink }}").then(response => response.json()).then(data => {
+  Plotly.newPlot("goodlinks-heatmap-{{ .Ordinal }}", [{x:Object.keys(data.heatmap), y:["reads"], z:[Object.values(data.heatmap)], type:"heatmap", colorscale:"Greens"}], {margin:{t:10}});
+});
+</script>

@@ -1,0 +1,25 @@
+{{ $data := .Page.Resources.GetMatch "goodlinks-data.json" }}
+<label>Filter <input id="goodlinks-table-filter-{{ .Ordinal }}" type="search"></label>
+<select id="goodlinks-table-sort-{{ .Ordinal }}">
+  <option value="read-desc">Newest read</option>
+  <option value="added-desc">Newest saved</option>
+  <option value="added-asc">Oldest saved</option>
+  <option value="title-asc">Title A-Z</option>
+  <option value="title-desc">Title Z-A</option>
+</select>
+<div id="goodlinks-table-{{ .Ordinal }}"></div>
+<script>
+fetch("{{ $data.RelPermalink }}").then(response => response.json()).then(data => {
+  const filter = document.querySelector("#goodlinks-table-filter-{{ .Ordinal }}");
+  const sort = document.querySelector("#goodlinks-table-sort-{{ .Ordinal }}");
+  const render = () => {
+    const query = filter.value.toLowerCase();
+    const rows = data.articles.filter(link => [link.title, link.url, ...(link.tags || [])].filter(Boolean).join(" ").toLowerCase().includes(query));
+    rows.sort((left, right) => (sort.value === "title-asc" ? (left.title || left.url).localeCompare(right.title || right.url) : (right.addedAt || "").localeCompare(left.addedAt || "")));
+    document.querySelector("#goodlinks-table-{{ .Ordinal }}").innerHTML = "<table><thead><tr><th>Article</th><th>Tags</th><th>Read</th></tr></thead><tbody>" + rows.map(link => "<tr><td><a href=\"" + link.url + "\">" + (link.title || link.url) + "</a></td><td>" + (link.tags || []).join(", ") + "</td><td>" + (link.readAt || "Unread") + "</td></tr>").join("") + "</tbody></table>";
+  };
+  filter.addEventListener("input", render);
+  sort.addEventListener("change", render);
+  render();
+});
+</script>

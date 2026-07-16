@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>GoodLinks reading stats</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+  <style>
+    body{font:16px system-ui;max-width:1200px;margin:auto;padding:2rem}
+    section{margin:3rem 0}
+    table{border-collapse:collapse;width:100%}
+    th,td{border-bottom:1px solid #ddd;padding:.5rem;text-align:left}
+    input,select{font:inherit;padding:.4rem;margin-right:.5rem}
+  </style>
+</head>
+<body>
+  <h1>GoodLinks reading stats</h1>
+  <section><h2>Tags over time</h2><div id="tags"></div></section>
+  <section><h2>Reading activity</h2><div id="heatmap"></div></section>
+  <section><h2>Sources and tags</h2><div id="sunburst"></div></section>
+  <section>
+    <h2>Articles</h2>
+    <label>Filter <input id="article-filter" type="search" placeholder="Title, URL, or tag"></label>
+    <label>Sort
+      <select id="article-sort">
+        <option value="read-desc">Newest read</option>
+        <option value="added-desc">Newest saved</option>
+        <option value="added-asc">Oldest saved</option>
+        <option value="title-asc">Title A-Z</option>
+        <option value="title-desc">Title Z-A</option>
+      </select>
+    </label>
+    <div id="articles"></div>
+  </section>
+  <script>
+  const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
+  fetch("data/goodlinks-data.json").then(response => response.json()).then(data => {
+    const traces = Object.entries(data.tag_series).map(([tag, months]) => ({name:tag,x:Object.keys(months),y:Object.values(months),stackgroup:"one",type:"scatter"}));
+    Plotly.newPlot("tags", traces, {margin:{t:10}});
+    Plotly.newPlot("heatmap", [{x:Object.keys(data.heatmap),y:["reads"],z:[Object.values(data.heatmap)],type:"heatmap",colorscale:"Greens"}], {margin:{t:10}});
+
+    const labels = ["GoodLinks"], parents = [""], ids = ["root"], values = [0];
+    const domainTags = {};
+    data.articles.forEach(link => {
+      const domain = new URL(link.url).hostname.toLowerCase().replace(/^www\./, "");
+      const tags = link.tags && link.tags.length ? link.tags : ["(untagged)"];
+      domainTags[domain] = domainTags[domain] || {};
+      tags.forEach(tag => { domainTags[domain][tag] = (domainTags[domain][tag] || 0) + 1; });
+    });
+    Object.entries(domainTags).forEach(([domain, tags]) => {
+      const domainId = "domain:" + domain;
+      const domainValue = Object.values(tags).reduce((total, count) => total + count, 0);
+      labels.push(domain); parents.push("GoodLinks"); ids.push(domainId); values.push(domainValue); values[0] += domainValue;
+      Object.entries(tags).forEach(([tag, count]) => { labels.push(tag); parents.push(domain); ids.push(domainId + ":" + tag); values.push(count); });
+    });
+    Plotly.newPlot("sunburst", [{labels,parents,ids,values,type:"sunburst",branchvalues:"total"}], {margin:{t:10}});
+
+    const renderArticles = () => {
+      const query = document.querySelector("#article-filter").value.toLowerCase();
+      const sort = document.querySelector("#article-sort").value;
+      const rows = data.articles.filter(link => [link.title, link.url, ...(link.tags || [])].filter(Boolean).join(" ").toLowerCase().includes(query));
+      rows.sort((left, right) => {
+        if (sort === "title-asc" || sort === "title-desc") {
+          const result = (left.title || left.url).localeCompare(right.title || right.url);
+          return sort === "title-asc" ? result : -result;
+        }
+        const leftDate = sort === "read-desc" ? (left.readAt || "") : left.addedAt;
+        const rightDate = sort === "read-desc" ? (right.readAt || "") : right.addedAt;
+        const result = leftDate.localeCompare(rightDate);
+        return sort === "added-asc" ? result : -result;
+      });
+      const body = rows.map(link => "<tr><td><a href=\"" + escapeHtml(link.url) + "\">" + escapeHtml(link.title || link.url) + "</a></td><td>" + escapeHtml((link.tags || []).join(", ")) + "</td><td>" + escapeHtml(link.readAt || "Unread") + "</td></tr>").join("");
+      document.querySelector("#articles").innerHTML = "<table><thead><tr><th>Article</th><th>Tags</th><th>Read</th></tr></thead><tbody>" + body + "</tbody></table>";
+    };
+    document.querySelector("#article-filter").addEventListener("input", renderArticles);
+    document.querySelector("#article-sort").addEventListener("change", renderArticles);
+    renderArticles();
+  });
+  </script>
+</body>
+</html>
