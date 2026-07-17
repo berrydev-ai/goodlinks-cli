@@ -1,5 +1,7 @@
 # `@berrydev-ai/goodlinks-cli`
 
+![NPM Version](https://img.shields.io/npm/v/%40berrydev-ai%2Fgoodlinks-cli)
+
 TypeScript CLI for reading, managing, cleaning, and exporting a local
 [GoodLinks](https://goodlinks.app/) library.
 
