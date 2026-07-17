@@ -2,7 +2,7 @@
 
 ## Goal
 
-Keep `CHANGELOG.md` current without manual edits after a pull request merges into `main`.
+Keep `CHANGELOG.md` current without manual edits after a supported pull request merges into `main`.
 The file will follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) conventions and will not create a release or Git tag for each merge.
 
 ## Changelog Format
@@ -57,6 +57,8 @@ Importing the script from a test will not execute the command.
 
 Add `.github/workflows/main-changelog.yml` with a `pull_request_target` `closed` trigger.
 The job will run only when the pull request was merged into `main`.
+Because the trigger runs from the trusted base repository and checks out only `main`, it handles same-repository and ordinary fork pull requests without running pull-request head code.
+GitHub may issue a read-only token for Dependabot-authored pull requests; those changelog updates require a different trusted credential or manual changelog follow-up.
 
 The workflow will:
 

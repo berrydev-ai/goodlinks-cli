@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Automatically add every pull request merged into `main` to the standard `Unreleased` section in `CHANGELOG.md`.
+**Goal:** Automatically add supported pull requests merged into `main` to the standard `Unreleased` section in `CHANGELOG.md`. The trusted-base workflow covers same-repository and ordinary fork pull requests; Dependabot-authored pull requests may receive a read-only token and require a different trusted credential or manual changelog follow-up.
 
 **Architecture:** A dependency-free TypeScript command reads GitHub's `pull_request_target` event, performs a pure changelog transformation, writes a GitHub Actions output flag, and updates the file only when needed. A GitHub Actions workflow invokes that command after a merge, checks out only the trusted `main` ref, and commits the resulting changelog change directly to `main`.
 
@@ -17,6 +17,8 @@
 - Add JSDoc to every exported function.
 - Do not add dependencies or change unrelated files.
 - Do not read any non-example `.env` file.
+- Use `pull_request_target` with an explicit trusted `main` checkout so ordinary fork merges are supported without running pull-request head code.
+- Accept that GitHub may issue a read-only token for Dependabot-authored pull requests; their changelog updates require a different trusted credential or manual changelog follow-up.
 
 ---
 
@@ -522,7 +524,8 @@ git commit -m "feat: generate unreleased changelog entries"
 **Interfaces:**
 
 - Consumes: `scripts/update-changelog.ts`, `GITHUB_EVENT_PATH`, and its `changed` GitHub output.
-- Produces: the `pnpm run changelog:update` package command and a workflow that commits changed `CHANGELOG.md` content to `main`.
+- Produces: the `pnpm run changelog:update` package command and a trusted-base workflow that commits changed `CHANGELOG.md` content to `main` for same-repository and ordinary fork pull requests.
+- Accepted limitation: GitHub may issue a read-only token for Dependabot-authored pull requests, so those changelog updates require a different trusted credential or manual changelog follow-up.
 
 - [ ] **Step 1: Add a package contract test that fails before the workflow exists**
 
