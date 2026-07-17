@@ -1,6 +1,6 @@
 {
   "name": "@berrydev-ai/goodlinks-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "TypeScript CLI for the local GoodLinks API",
   "type": "module",
   "bin": {
