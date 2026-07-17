@@ -1,0 +1,63 @@
+name: Main Changelog
+
+on:
+  pull_request_target:
+    types: [closed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: main-changelog
+  queue: max
+
+jobs:
+  update-main-changelog:
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
+    name: Update main changelog
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.29.3
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure Git author
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Update changelog
+        id: changelog
+        run: pnpm run changelog:update
+
+      - name: Commit changelog
+        if: steps.changelog.outputs.changed == 'true'
+        run: |
+          git add CHANGELOG.md
+          git commit -m "docs: update changelog for #${{ github.event.pull_request.number }}"
+
+      - name: Push changelog commit
+        if: steps.changelog.outputs.changed == 'true'
+        run: |
+          git pull --rebase origin main
+          git push origin HEAD:main

@@ -16,6 +16,7 @@
   ],
   "scripts": {
     "build": "tsup src/cli.ts --format esm --clean",
+    "changelog:update": "node --import tsx scripts/update-changelog.ts",
     "check": "pnpm run typecheck && pnpm test && pnpm run build && pnpm run skill:check",
     "prepack": "pnpm run build && pnpm run skill:check",
     "skill:check": "node --import tsx scripts/generate-skill-reference.ts --check",
