@@ -4,7 +4,7 @@
 
 **Goal:** Automatically add every pull request merged into `main` to the standard `Unreleased` section in `CHANGELOG.md`.
 
-**Architecture:** A dependency-free TypeScript command reads GitHub's pull-request event, performs a pure changelog transformation, writes a GitHub Actions output flag, and updates the file only when needed. A GitHub Actions workflow invokes that command after a merge and commits the resulting changelog change directly to `main`.
+**Architecture:** A dependency-free TypeScript command reads GitHub's `pull_request_target` event, performs a pure changelog transformation, writes a GitHub Actions output flag, and updates the file only when needed. A GitHub Actions workflow invokes that command after a merge, checks out only the trusted `main` ref, and commits the resulting changelog change directly to `main`.
 
 **Tech Stack:** Node.js 22, TypeScript 5.9, `node:test`, `tsx`, pnpm 10, GitHub Actions.
 
@@ -38,7 +38,7 @@
 
 **Interfaces:**
 
-- Consumes: GitHub `pull_request` event JSON, `GITHUB_EVENT_PATH`, `GITHUB_OUTPUT`, `--event-path`, and `--changelog`.
+- Consumes: GitHub `pull_request_target` event JSON, `GITHUB_EVENT_PATH`, `GITHUB_OUTPUT`, `--event-path`, and `--changelog`.
 - Produces: `parsePullRequestEvent(value: unknown): PullRequestMetadata`, `categorizePullRequest(pr: PullRequestMetadata): ChangelogCategory`, `updateChangelog(changelog: string, pr: PullRequestMetadata): ChangelogUpdate`, and an executable command that writes `changed=true|false`.
 
 - [ ] **Step 1: Write the failing command-boundary test for an Added entry**
@@ -542,17 +542,28 @@ test("workflow runs the changelog command only after merges to main", async () =
     packageJson.scripts["changelog:update"],
     "node --import tsx scripts/update-changelog.ts",
   );
-  assert.match(workflow, /pull_request:\n\s+types: \[closed\]/);
+  assert.match(workflow, /pull_request_target:\n\s+types: \[closed\]/);
   assert.match(
     workflow,
     /github\.event\.pull_request\.merged == true && github\.event\.pull_request\.base\.ref == 'main'/,
   );
-  assert.match(workflow, /contents: write/);
+  assert.match(workflow, /permissions:\n  contents: read/);
+  assert.match(workflow, /permissions:\n      contents: write/);
+  assert.match(workflow, /concurrency:\n  group: main-changelog\n  queue: max/);
+  assert.doesNotMatch(workflow, /cancel-in-progress/);
+  assert.match(workflow, /with:\n          ref: main/);
+  assert.doesNotMatch(workflow, /pull_request\.head/);
+  assert.match(workflow, /version: 10\.29\.3/);
+  assert.match(workflow, /node-version: 22/);
+  assert.match(workflow, /run: pnpm install --frozen-lockfile/);
   assert.match(workflow, /run: pnpm run changelog:update/);
-  assert.match(workflow, /if: steps\.changelog\.outputs\.changed == 'true'/);
+  assert.equal(
+    workflow.match(/if: steps\.changelog\.outputs\.changed == 'true'/g)?.length,
+    2,
+  );
   assert.match(workflow, /git pull --rebase origin main/);
   assert.match(workflow, /git push origin HEAD:main/);
-  assert.doesNotMatch(workflow, /git push origin .*tag/);
+  assert.doesNotMatch(workflow, /git push[^\n]*(?:--tags|--follow-tags)/);
 });
 ```
 
@@ -578,7 +589,7 @@ Create `.github/workflows/main-changelog.yml` with:
 name: Main Changelog
 
 on:
-  pull_request:
+  pull_request_target:
     types: [closed]
 
 permissions:
@@ -586,7 +597,7 @@ permissions:
 
 concurrency:
   group: main-changelog
-  cancel-in-progress: false
+  queue: max
 
 jobs:
   update-main-changelog:

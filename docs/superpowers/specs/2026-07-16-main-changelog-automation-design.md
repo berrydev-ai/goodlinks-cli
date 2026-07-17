@@ -40,7 +40,7 @@ Matching will ignore case. Conventional Commit scopes such as `feat(cli):` and `
 ## Generator
 
 Add a TypeScript command at `scripts/update-changelog.ts`.
-It will read the GitHub `pull_request` event from `GITHUB_EVENT_PATH`, read `CHANGELOG.md`, and write the updated file.
+It will read the GitHub `pull_request_target` event from `GITHUB_EVENT_PATH`, read `CHANGELOG.md`, and write the updated file.
 
 The command will:
 
@@ -55,19 +55,19 @@ Importing the script from a test will not execute the command.
 
 ## GitHub Workflow
 
-Add `.github/workflows/main-changelog.yml` with a `pull_request` `closed` trigger.
+Add `.github/workflows/main-changelog.yml` with a `pull_request_target` `closed` trigger.
 The job will run only when the pull request was merged into `main`.
 
 The workflow will:
 
-1. Check out `main` with complete Git history.
+1. Check out the explicit trusted `main` ref with complete Git history, never pull-request head code.
 2. Set up the repository's supported Node and pnpm versions.
 3. Install dependencies from the lockfile.
 4. Run `scripts/update-changelog.ts`.
 5. Commit `CHANGELOG.md` only when the script reports a change.
 6. Rebase on the latest `main` and push the changelog commit.
 
-A repository-wide concurrency group will process one changelog update at a time without cancelling earlier updates.
+A repository-wide concurrency group with `queue: max` will queue every changelog update and process one at a time.
 The workflow will have read access by default and grant only its job `contents: write` and `pull-requests: read`.
 
 The workflow will not create or push Git tags.

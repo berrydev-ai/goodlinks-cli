@@ -1,7 +1,7 @@
 name: Main Changelog
 
 on:
-  pull_request:
+  pull_request_target:
     types: [closed]
 
 permissions:
@@ -9,7 +9,7 @@ permissions:
 
 concurrency:
   group: main-changelog
-  cancel-in-progress: false
+  queue: max
 
 jobs:
   update-main-changelog:

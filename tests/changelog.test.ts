@@ -285,15 +285,26 @@ test("workflow runs the changelog command only after merges to main", async () =
     packageJson.scripts["changelog:update"],
     "node --import tsx scripts/update-changelog.ts",
   );
-  assert.match(workflow, /pull_request:\n\s+types: \[closed\]/);
+  assert.match(workflow, /pull_request_target:\n\s+types: \[closed\]/);
   assert.match(
     workflow,
     /github\.event\.pull_request\.merged == true && github\.event\.pull_request\.base\.ref == 'main'/,
   );
-  assert.match(workflow, /contents: write/);
+  assert.match(workflow, /permissions:\n  contents: read/);
+  assert.match(workflow, /permissions:\n      contents: write/);
+  assert.match(workflow, /concurrency:\n  group: main-changelog\n  queue: max/);
+  assert.doesNotMatch(workflow, /cancel-in-progress/);
+  assert.match(workflow, /with:\n          ref: main/);
+  assert.doesNotMatch(workflow, /pull_request\.head/);
+  assert.match(workflow, /version: 10\.29\.3/);
+  assert.match(workflow, /node-version: 22/);
+  assert.match(workflow, /run: pnpm install --frozen-lockfile/);
   assert.match(workflow, /run: pnpm run changelog:update/);
-  assert.match(workflow, /if: steps\.changelog\.outputs\.changed == 'true'/);
+  assert.equal(
+    workflow.match(/if: steps\.changelog\.outputs\.changed == 'true'/g)?.length,
+    2,
+  );
   assert.match(workflow, /git pull --rebase origin main/);
   assert.match(workflow, /git push origin HEAD:main/);
-  assert.doesNotMatch(workflow, /git push origin .*tag/);
+  assert.doesNotMatch(workflow, /git push[^\n]*(?:--tags|--follow-tags)/);
 });
